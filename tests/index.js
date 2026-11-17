@@ -22,7 +22,8 @@ import { createSeed, makeVisit } from "../src/lib/seed.ts";
 import { isAppData } from "../src/lib/storage.ts";
 
 const today = "2026-11-17";
-const seed = () => createSeed(new Date(`${today}T12:00:00+09:00`));
+// 11:10に開いた想定（到着中の訪問が10:58到着になる）。
+const seed = () => createSeed(new Date(`${today}T11:10:00+09:00`));
 
 test("順路を上下に移動し、元の配列と項目を保持する", () => {
   const original = [{ id: "a" }, { id: "b" }, { id: "c" }];
@@ -253,4 +254,26 @@ test("保存データの不正な形・時刻・負数・重複IDを拒否する
   );
   assert.equal(isAppData({ ...seed(), visits: [{ ...seed().visits[0], distance: -2 }] }), false);
   assert.equal(isAppData({ ...seed(), visits: [seed().visits[0], seed().visits[0]] }), false);
+});
+
+test("初期データの今日の時刻は開いた時刻からの相対で、夜や早朝でも到着中は直近になる", () => {
+  for (const time of ["22:17", "00:05", "06:30", "23:58"]) {
+    const now = new Date(`${today}T${time}:00+09:00`);
+    const data = createSeed(now);
+    const visits = dayVisits(data, today);
+    assert.equal(visits.length, 6);
+    const arriving = data.visits[3];
+    assert.equal(arriving.status, "到着中");
+    const elapsed = minutesBetween(arriving.arrivedAt, now.toISOString());
+    assert.ok(elapsed >= 0 && elapsed <= 12, `${time}: ${elapsed}`);
+    for (const visit of visits) {
+      for (const value of [visit.arrivedAt, visit.finishedAt, visit.absentAt]) {
+        if (!value) continue;
+        assert.ok(value.startsWith(today), `${time}: ${value}`);
+        assert.ok(Date.parse(value) <= now.getTime(), `${time}: ${value}`);
+      }
+    }
+    assert.ok(stayMinutes(data.visits[0]) >= 0);
+    assert.equal(isAppData(data), true);
+  }
 });

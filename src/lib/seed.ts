@@ -128,6 +128,23 @@ export function makeVisit(place: Place, date: string, id: string): Visit {
 export function createSeed(now = new Date()): AppData {
   const today = japanDate(now);
   const stamp = (date: string, time: string) => `${date}T${time}:00+09:00`;
+  // 今日の記録は、開いた時点の日本時間からの相対時刻で作る。
+  // 「到着中」の訪問は約12分前に到着した状態になり、夜に開いても滞在時間が膨らまない。
+  const nowMinutes = Math.floor((((now.getTime() / 60000 + 9 * 60) % 1440) + 1440) % 1440);
+  const anchor = Math.max(nowMinutes - 12, 0);
+  const earliest = 118;
+  const scale = Math.min(1, anchor / earliest);
+  const at = (offset: number) => {
+    const minutes = offset < 0 ? Math.round(anchor + offset * scale) : anchor + offset;
+    const clamped = Math.min(Math.max(minutes, 0), 23 * 60 + 59);
+    const hh = String(Math.floor(clamped / 60)).padStart(2, "0");
+    const mm = String(clamped % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  };
+  const later = (offset: number, latest: string) => {
+    const value = at(offset);
+    return value > latest ? latest : value;
+  };
   const first = makeVisit(places[0], today, "today-1");
   const second = makeVisit(places[1], today, "today-2");
   const third = makeVisit(places[2], today, "today-3");
@@ -137,35 +154,36 @@ export function createSeed(now = new Date()): AppData {
   const visits: Visit[] = [
     {
       ...first,
+      time: at(-118),
       status: "完了",
-      arrivedAt: stamp(today, "09:00"),
-      finishedAt: stamp(today, "09:25"),
+      arrivedAt: stamp(today, at(-118)),
+      finishedAt: stamp(today, at(-93)),
       resultMemo: "在庫と陳列を確認。異常なし。",
       mode: "車",
       distance: 3.2,
       history: [
         emptyRecord,
-        { ...emptyRecord, status: "到着中", arrivedAt: stamp(today, "09:00") },
+        { ...emptyRecord, status: "到着中", arrivedAt: stamp(today, at(-118)) },
       ],
     },
     {
       ...second,
-      time: "09:45",
+      time: at(-73),
       status: "完了",
-      arrivedAt: stamp(today, "09:42"),
-      finishedAt: stamp(today, "10:05"),
+      arrivedAt: stamp(today, at(-76)),
+      finishedAt: stamp(today, at(-53)),
       resultMemo: "補充品とカタログをお渡しした。",
       distance: 0.4,
       history: [
         emptyRecord,
-        { ...emptyRecord, status: "到着中", arrivedAt: stamp(today, "09:42") },
+        { ...emptyRecord, status: "到着中", arrivedAt: stamp(today, at(-76)) },
       ],
     },
     {
       ...third,
-      time: "10:30",
+      time: at(-28),
       status: "不在",
-      absentAt: stamp(today, "10:32"),
+      absentAt: stamp(today, at(-26)),
       resultMemo: "休館のため、別日に再訪する。",
       mode: "車",
       distance: 2.1,
@@ -173,15 +191,15 @@ export function createSeed(now = new Date()): AppData {
     },
     {
       ...fourth,
-      time: "11:00",
+      time: at(2),
       status: "到着中",
-      arrivedAt: stamp(today, "10:58"),
+      arrivedAt: stamp(today, at(0)),
       mode: "車",
       distance: 1.8,
       history: [emptyRecord],
     },
-    { ...fifth, time: "13:00", mode: "電車・バス", fare: 240 },
-    { ...sixth, time: "14:00", mode: "徒歩", distance: 0.8 },
+    { ...fifth, time: later(122, "23:30"), mode: "電車・バス", fare: 240 },
+    { ...sixth, time: later(182, "23:50"), mode: "徒歩", distance: 0.8 },
   ];
 
   // 日ごとの訪問先・時刻・結果は個別に定義した架空の記録。
