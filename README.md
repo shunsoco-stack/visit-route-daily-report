@@ -70,10 +70,14 @@
 
 ## スクリーンショット
 
+![今日の訪問](docs/screenshots/01-today.png)
+
+02はスマートフォン幅（390×844）、それ以外はデスクトップ幅（1440px）で公開URLから撮影しています。
+
 | 画面 | 画像 |
 | --- | --- |
 | 今日の訪問 | [01-today.png](docs/screenshots/01-today.png) |
-| ワンタップ記録 | [02-one-tap.png](docs/screenshots/02-one-tap.png) |
+| ワンタップ記録（スマホ 390×844） | [02-one-tap.png](docs/screenshots/02-one-tap.png) |
 | 順路 | [03-route.png](docs/screenshots/03-route.png) |
 | 日報 | [04-report.png](docs/screenshots/04-report.png) |
 | 再訪リスト | [05-revisit.png](docs/screenshots/05-revisit.png) |
